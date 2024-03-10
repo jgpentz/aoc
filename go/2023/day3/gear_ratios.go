@@ -187,4 +187,5 @@ func FindRatio() int {
 func main() {
     sum := FindRatio()
     fmt.Println("The sum is: ", sum)
+    fmt.Println("The sum is: ", sum)
 }
