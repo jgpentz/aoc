@@ -15,9 +15,9 @@ func isLastLine(scanner *bufio.Scanner)  bool {
     return false
 }
 
-func SearchSurrounding(prevLine string, curLine string, nextLine string, idx int) bool {
+func SearchSurrounding(prevLine string, curLine string, nextLine string, idx int) (bool, int, int) {
     // Regex pattern for the special chars
-    re := regexp.MustCompile(`[^A-Za-z0-9\.]`)
+    re := regexp.MustCompile(`\*`)
     var start_idx, end_idx int
 
     // Set the start and end indices (beginning of line, middle, end of line)
@@ -39,7 +39,7 @@ func SearchSurrounding(prevLine string, curLine string, nextLine string, idx int
             if i == idx - 1 || i == idx + 1 {
                 matched := re.MatchString(string(curLine[i]))
                 if matched {
-                    return true
+                    return true, 0, i
                 }
             }
         }
@@ -48,7 +48,7 @@ func SearchSurrounding(prevLine string, curLine string, nextLine string, idx int
         if prevLine != "" {
             matched := re.MatchString(string(prevLine[i]))
             if matched {
-                return true
+                return true, -1, i
             }
         }
 
@@ -56,12 +56,12 @@ func SearchSurrounding(prevLine string, curLine string, nextLine string, idx int
         if nextLine != ""{
             matched := re.MatchString(string(nextLine[i]))
             if matched {
-                return true
+                return true,  1, i
             }
         }
     }
 
-    return false
+    return false, 0, 0 
 }
 
 func GetNumber(cur_line string, cur_idx int) (int, int) {
@@ -116,6 +116,8 @@ func FindRatio() int {
     cur_line := ""
     next_line := ""
 
+    gears := make(map[[2]int][]int)
+
     for scanner.Scan() {
         next_line = scanner.Text()
         
@@ -129,10 +131,13 @@ func FindRatio() int {
         i := 0
         for i < len(cur_line) {
             if _, err := strconv.Atoi(string(cur_line[i])); err == nil {
-                match := SearchSurrounding(prev_line, cur_line, next_line, i)
+                match, iline, ichar := SearchSurrounding(prev_line, cur_line, next_line, i)
                 if match {
                     curNumberInt, lastNumIdx := GetNumber(cur_line, i)
-                    sum += curNumberInt
+
+                    // Store this number in the gear's array
+                    line := line_idx + iline
+                    gears[[2]int{line, ichar}] = append(gears[[2]int{line, ichar}], curNumberInt)
 
                     // Advance i to end of this number
                     i = lastNumIdx
@@ -153,10 +158,13 @@ func FindRatio() int {
     i := 0
     for i < len(cur_line) {
         if _, err := strconv.Atoi(string(cur_line[i])); err == nil {
-            match := SearchSurrounding(prev_line, cur_line, next_line, i)
+            match, iline, ichar := SearchSurrounding(prev_line, cur_line, next_line, i)
             if match {
                 curNumberInt, lastNumIdx := GetNumber(cur_line, i)
-                sum += curNumberInt
+
+                // Store this number in the gear's array
+                line := line_idx + iline
+                gears[[2]int{line, ichar}] = append(gears[[2]int{line, ichar}], curNumberInt)
 
                 // Advance i to end of this number
                 i = lastNumIdx
@@ -165,6 +173,12 @@ func FindRatio() int {
         } 
 
         i += 1
+    }
+
+    for _, v := range gears {
+        if len(v) == 2 {
+            sum += v[0] * v[1]
+        }
     }
 
     return sum
