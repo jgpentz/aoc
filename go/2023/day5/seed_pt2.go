@@ -9,8 +9,8 @@ import (
     "strconv"
 )
 
-func read_input(fname string) ([]int, map[string][][]int, []string) {
-    var seeds []int
+func read_input2(fname string) ([][]int, map[string][][]int, []string) {
+    var seeds [][]int
     var maps = make(map[string][][]int)
     var map_names []string
     var cur_map_name string
@@ -39,9 +39,7 @@ func read_input(fname string) ([]int, map[string][][]int, []string) {
                             log.Fatal(err)
                         }
                         
-                        for i := seed_int; i < (seed_int + seed_range); i++ {
-                            seeds = append(seeds, i)
-                        }
+                        seeds = append(seeds, []int{seed_int, seed_range})
                     }
                 }
             } else {
@@ -75,47 +73,48 @@ func read_input(fname string) ([]int, map[string][][]int, []string) {
     return seeds, maps, map_names
 }
 
-func find_lowest_location(seeds []int, maps map[string][][]int, map_names []string) int {
-    outputs := seeds
-    for _, map_name := range map_names {
-        inputs := outputs
-        outputs = []int{}
-        for _, input := range inputs {
-            new_output := input
+
+func backwards(seeds [][]int, maps map[string][][]int, map_names []string) int {
+    for i, j := 0, len(map_names) - 1; i < j; i, j = i + 1, j - 1{
+        map_names[i], map_names[j] = map_names[j], map_names[i]
+    }
+
+    i := 0
+    for {
+        starting := i
+        input := i
+        for _, map_name := range map_names {
             for _, map_entry := range maps[map_name] {
                 // Check if input is within source range, if it is then the destination
                 // is destination plus the new offset (input - source), otherwise
                 // the destination is just equal to the input
-                if (map_entry[1] <= input) && (input <= map_entry[1] + map_entry[2]) {
-                    new_output = map_entry[0] + (input - map_entry[1])
+                if (map_entry[0] <= input) && (input <= map_entry[0] + map_entry[2]) {
+                    input = map_entry[1] + (input - map_entry[0])
                     break
                 }
             }
-
-            outputs = append(outputs, new_output)
         }
-    }
+        
+        for _, seed := range seeds {
+            if (seed[0] <= input) && (input <= seed[0] + seed[1]) {
+                return starting
+            }
+        } 
 
-    lowest_location := outputs[0]
-    for _, output := range outputs {
-        if output < lowest_location {
-            lowest_location = output
-        }
+        i += 1
     }
-
-    return lowest_location
 }
 
 func main() {
-    seeds, maps, map_names := read_input("input_test.txt")
+    seeds, maps, map_names := read_input2("input_test.txt")
 
-    lowest_location := find_lowest_location(seeds, maps, map_names)
+    lowest_location := backwards(seeds, maps, map_names)
     if lowest_location != 46 {
         panic(fmt.Sprintf("Test case failed! Expected: 46, computed: %v", lowest_location))
     }
 
-    seeds, maps, map_names = read_input("input.txt")
+    seeds, maps, map_names = read_input2("input.txt")
 
-    lowest_location = find_lowest_location(seeds, maps, map_names)
+    lowest_location = backwards(seeds, maps, map_names)
     fmt.Println("Lowest location number is: ", lowest_location)
 }
